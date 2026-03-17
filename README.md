@@ -29,11 +29,15 @@ It wrote the code, ran away, and now the game is unplayable.
 Game Glitch Investigator is a number-guessing game built with Streamlit. The player picks a difficulty (Easy / Normal / Hard), which sets the number range and attempt limit. Each round a secret integer is randomly chosen; the player submits guesses and receives "Too High" / "Too Low" hints until they guess correctly or exhaust their attempts. A running score rewards faster wins.
 
 ### Bugs found
-| # | Bug | Location |
-|---|-----|----------|
-| 1 | **Hints were backwards** — "Go HIGHER!" fired when the guess was *above* the secret, sending the player in the wrong direction every time. | `app.py` → `check_guess` |
-| 2 | **Secret type-switched on even attempts** — the secret was cast to `str` on even-numbered guesses, so Python used lexicographic ordering (`"9" > "50"` = True) instead of numeric ordering, making the game unwinnable half the time. | `app.py` lines 158–163 |
-| 3 | **Hard difficulty was easier than Normal** — Hard had a range of 1–50 (smaller than Normal's 1–100) despite offering fewer attempts. | `app.py` → `get_range_for_difficulty` |
+1. Backwards hints
+Location: app.py → check_guess
+The game displayed incorrect guidance to the player. When the guess was higher than the secret number, it incorrectly showed “Go HIGHER!” instead of “Go LOWER!”, and vice versa. This caused players to move in the wrong direction every time.
+2. Secret type switching on even attempts
+Location: app.py lines 158–163
+On even-numbered attempts, the secret number was converted to a string. This caused Python to compare values lexicographically instead of numerically (for example, "9" > "50" evaluates to True), making the game behave incorrectly and sometimes impossible to win.
+3. Hard difficulty easier than Normal
+Location: app.py → get_range_for_difficulty
+The difficulty settings were inconsistent. Hard mode used a smaller number range (1–50) compared to Normal mode (1–100), despite offering fewer attempts. This made Hard mode unintentionally easier than Normal.
 
 ### Fixes applied
 - **Bug 1:** Swapped the comparison branches in `check_guess` so `guess > secret` → `"Too High"` and `guess < secret` → `"Too Low"`.
@@ -44,29 +48,9 @@ Game Glitch Investigator is a number-guessing game built with Streamlit. The pla
 
 ## 📸 Demo
 
-> **pytest results — all 14 tests passing**
 
-```
-============================= test session starts ==============================
-tests/test_game_logic.py::test_winning_guess                         PASSED
-tests/test_game_logic.py::test_guess_too_high                        PASSED
-tests/test_game_logic.py::test_guess_too_low                         PASSED
-tests/test_game_logic.py::test_hint_direction_too_high               PASSED
-tests/test_game_logic.py::test_hint_direction_too_low                PASSED
-tests/test_game_logic.py::test_no_string_comparison_edge_case        PASSED
-tests/test_game_logic.py::test_no_string_comparison_large_vs_small   PASSED
-tests/test_game_logic.py::test_parse_valid_integer                   PASSED
-tests/test_game_logic.py::test_parse_empty_string                    PASSED
-tests/test_game_logic.py::test_parse_non_numeric                     PASSED
-tests/test_game_logic.py::test_parse_decimal_truncates               PASSED
-tests/test_game_logic.py::test_hard_range_wider_than_normal          PASSED
-tests/test_game_logic.py::test_easy_range                            PASSED
-tests/test_game_logic.py::test_normal_range                          PASSED
-============================== 14 passed in 0.01s ==============================
-```
+https://github.com/user-attachments/assets/47d89e34-104e-4150-bce0-48f58ceff4ad
 
-*(Replace this block with a real screenshot of your terminal once you have run `pytest` locally — use your OS snipping tool or `Cmd+Shift+4` on macOS.)*
 
-## 🚀 Stretch Features
 
-- [ ] [If you choose to complete Challenge 4, insert a screenshot of your Enhanced Game UI here]
+
