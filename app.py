@@ -1,68 +1,9 @@
 import random
 import streamlit as st
 
-def get_range_for_difficulty(difficulty: str):
-    if difficulty == "Easy":
-        return 1, 20
-    if difficulty == "Normal":
-        return 1, 100
-    if difficulty == "Hard":
-        return 1, 50
-    return 1, 100
-
-
-def parse_guess(raw: str):
-    if raw is None:
-        return False, None, "Enter a guess."
-
-    if raw == "":
-        return False, None, "Enter a guess."
-
-    try:
-        if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
-    except Exception:
-        return False, None, "That is not a number."
-
-    return True, value, None
-
-
-def check_guess(guess, secret):
-    if guess == secret:
-        return "Win", "🎉 Correct!"
-
-    try:
-        if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
-        else:
-            return "Too Low", "📉 Go LOWER!"
-    except TypeError:
-        g = str(guess)
-        if g == secret:
-            return "Win", "🎉 Correct!"
-        if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
-
-
-def update_score(current_score: int, outcome: str, attempt_number: int):
-    if outcome == "Win":
-        points = 100 - 10 * (attempt_number + 1)
-        if points < 10:
-            points = 10
-        return current_score + points
-
-    if outcome == "Too High":
-        if attempt_number % 2 == 0:
-            return current_score + 5
-        return current_score - 5
-
-    if outcome == "Too Low":
-        return current_score - 5
-
-    return current_score
+# FIX: All game logic refactored out of app.py and into logic_utils.py using
+# Copilot Agent mode so each function can be unit-tested independently.
+from logic_utils import get_range_for_difficulty, parse_guess, check_guess, update_score
 
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
 
@@ -106,8 +47,10 @@ if "history" not in st.session_state:
 
 st.subheader("Make a guess")
 
+# FIX: Updated the info message to use the actual low/high from the selected
+# difficulty instead of hardcoded "1 and 100".
 st.info(
-    f"Guess a number between 1 and 100. "
+    f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
@@ -133,7 +76,7 @@ with col3:
 
 if new_game:
     st.session_state.attempts = 0
-    st.session_state.secret = random.randint(1, 100)
+    st.session_state.secret = random.randint(low, high)
     st.success("New game started.")
     st.rerun()
 
@@ -143,6 +86,14 @@ if st.session_state.status != "playing":
     else:
         st.error("Game over. Start a new game to try again.")
     st.stop()
+
+# Hint messages keyed by outcome — defined here so the UI controls the wording
+# while logic_utils owns the outcome decision.
+_hint_messages = {
+    "Win":      "🎉 Correct!",
+    "Too High": "📉 Go LOWER!",
+    "Too Low":  "📈 Go HIGHER!",
+}
 
 if submit:
     st.session_state.attempts += 1
@@ -155,15 +106,16 @@ if submit:
     else:
         st.session_state.history.append(guess_int)
 
-        if st.session_state.attempts % 2 == 0:
-            secret = str(st.session_state.secret)
-        else:
-            secret = st.session_state.secret
-
-        outcome, message = check_guess(guess_int, secret)
+        # FIXME was here: original code randomly cast the secret to a string on
+        # even-numbered attempts, causing lexicographic comparisons (e.g. "9" > "50"
+        # alphabetically) that returned the wrong outcome.
+        #
+        # FIX: Always compare against the integer secret. The type-switching block
+        # has been removed. Verified by pytest and manual testing.
+        outcome = check_guess(guess_int, st.session_state.secret)
 
         if show_hint:
-            st.warning(message)
+            st.warning(_hint_messages[outcome])
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
