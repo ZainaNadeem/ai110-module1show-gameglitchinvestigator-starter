@@ -4,31 +4,31 @@ Answer each question in 3 to 5 sentences. Be specific and honest about what actu
 
 ## 1. What was broken when you started?
 
-When I first ran the game, it appeared to work on the surface — but the hints and scoring behaved in confusing and incorrect ways. Here are three concrete bugs I found:
+When I first ran the game, it appeared to work on the surface but the hints and scoring behaved in confusing and incorrect ways. Here are three concrete bugs I found:
 
 **Bug 1: Hints are backwards**
-- **Expected:** When my guess is too high, the game should tell me to go *lower*; when my guess is too low, it should tell me to go *higher*.
-- **What actually happened:** In `check_guess` ([app.py:38-40](app.py#L38-L40)), the messages are flipped — guessing too high shows "📈 Go HIGHER!" and guessing too low shows "📉 Go LOWER!". This sends you in the completely wrong direction every time.
+- **Expected:** When my guess is too high, the game should tell me to go *lower*. when my guess is too low, it should tell me to go *higher*.
+- **What actually happened:** In `check_guess` (app.py), the messages are flipped — guessing too high shows "📈 Go HIGHER!" and guessing too low shows "📉 Go LOWER!". This sends you in the completely wrong direction every time.
 
 **Bug 2: The secret number switches type on even attempts, breaking comparisons**
 - **Expected:** Every guess is compared fairly against the secret number as an integer.
-- **What actually happened:** On even-numbered attempts, the code converts `secret` to a string ([app.py:158-161](app.py#L158-L161)). Comparing an integer guess against a string uses Python's lexicographic (alphabetical) ordering, not numeric ordering. For example, guessing `9` when the secret is `50` as a string: `"9" > "50"` (because `"9"` > `"5"` alphabetically), so it reports "Too High" — but 9 is actually lower than 50. This makes the game impossible to win on even attempts.
+- **What actually happened:** On even-numbered attempts, the code converts `secret` to a string (app.py). The comparison of an integer guess and a string secret uses Python's lexicographical ordering and not numerical ordering. For example, when the secret is `50` as a string and the user guesses `9`, the code compares the string `9` and `50`, finding `9 > 50` because `9 > 5` alphabetically. It outputs "Too High," but in reality, `9` is less than `50`. This game is unwinnable.
 
 **Bug 3: "Hard" difficulty is actually easier than "Normal"**
 - **Expected:** Hard difficulty should have a wider number range to make guessing harder.
-- **What actually happened:** The range for Hard is `1–50` ([app.py:9-10](app.py#L9-L10)), which is *smaller* than Normal's `1–100`. Hard gives you fewer attempts (5 vs. 8) but a narrower range, which makes it potentially easier to guess — the opposite of what "Hard" should mean.
+- **What actually happened:** The range for Hard is `1–50` (app.py), which is *smaller* than Normal's `1–100`. Hard provides fewer tries (5 instead of 8) and a smaller range, which makes it *easier* to guess, contrary to what "Hard" should be implying.
 
 ---
 
 ## 2. How did you use AI as a teammate?
 
-I used Claude Code (Claude Sonnet 4.6 via the VS Code extension) as my AI teammate throughout this project.
+I used Claude Code (Claude Sonnet 4.6, the VS Code extension) as my AI teammate throughout this project.
 
 **Correct suggestion — refactoring logic into `logic_utils.py`:**
-I asked the AI to move `check_guess`, `parse_guess`, `get_range_for_difficulty`, and `update_score` out of `app.py` and into `logic_utils.py`, and to fix the backwards-hint bug at the same time. The AI correctly identified that the hint messages were swapped (`"Go HIGHER!"` was firing when `guess > secret`) and rewrote the function so `"Too High"` is returned when the guess exceeds the secret and `"Too Low"` when it falls short. I verified this by reading the new code in [logic_utils.py](logic_utils.py) and by running `pytest`, which confirmed all hint-direction tests passed.
+I asked the AI to move `check_guess`, `parse_guess`, `get_range_for_difficulty`, and `update_score` out of `app.py` and into `logic_utils.py`, and to fix the backwards-hint bug at the same time. The AI correctly identified that the hint messages were swapped (`"Go HIGHER!"` was firing when `guess > secret`) and rewrote the function so `"Too High"` is returned when the guess exceeds the secret and `"Too Low"` when it falls short. I verified this by reading the new code in (logic_utils.py) and by running `pytest`, which confirmed all hint-direction tests passed.
 
-**Incorrect / misleading suggestion — the `update_score` asymmetry:**
-When I asked the AI to explain the scoring logic, it initially described the even/odd attempt penalty for "Too High" as an intentional "streak mechanic." After re-reading the original code carefully, I realized it was just another bug — guessing too high gave you +5 points on even attempts, which makes no sense for a guessing game. I simplified `update_score` in `logic_utils.py` so that any wrong guess always deducts 5 points, and I verified the change made scoring consistent by manually tracing through a few rounds in the debug expander.
+**Incorrect / misleading suggestion - the `update_score` asymmetry:**
+When I asked the AI to explain the scoring logic, it initially described the even/odd attempt penalty for "Too High" as an intentional "streak mechanic." After re-reading the original code carefully, I realized it was just another bug. Guessing too high gave you +5 points on even attempts, which makes no sense for a guessing game. I simplified `update_score` in `logic_utils.py` so that any wrong guess always deducts 5 points and I verified the change made scoring consistent by manually tracing through a few rounds in the debug expander.
 
 ---
 
